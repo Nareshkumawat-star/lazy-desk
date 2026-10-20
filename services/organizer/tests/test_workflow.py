@@ -27,6 +27,37 @@ def test_electron_origin_can_call_the_api(client, auth_headers):
     assert allowed.headers["access-control-allow-origin"] == "lazydesk://app"
 
 
+def test_deployed_origin_can_call_the_api(client, auth_headers):
+    """A frontend hosted on its own origin (e.g. a Render static site) is allowed."""
+    deployed = "https://lazydesk-site.onrender.com"
+    preflight = client.options(
+        "/api/dashboard",
+        headers={
+            "Origin": deployed,
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "x-lazydesk-token",
+        },
+    )
+    assert preflight.status_code == 200
+    assert preflight.headers["access-control-allow-origin"] == deployed
+    allowed = client.get("/api/dashboard", headers={**auth_headers, "Origin": deployed})
+    assert allowed.status_code == 200
+    assert allowed.headers["access-control-allow-origin"] == deployed
+
+
+def test_unknown_origin_is_still_rejected(client, auth_headers):
+    """Widening CORS for one hosted site must not open it to every other site."""
+    evil = "https://evil.example.com"
+    preflight = client.options(
+        "/api/dashboard",
+        headers={"Origin": evil, "Access-Control-Request-Method": "GET"},
+    )
+    assert "access-control-allow-origin" not in preflight.headers
+    response = client.get("/api/dashboard", headers={**auth_headers, "Origin": evil})
+    assert response.status_code == 200
+    assert "access-control-allow-origin" not in response.headers
+
+
 def test_scan_plan_apply_undo(client, auth_headers, messy_folder: Path):
     scan = client.post("/api/scan", json={"path": str(messy_folder)}, headers=auth_headers)
     assert scan.status_code == 200, scan.text

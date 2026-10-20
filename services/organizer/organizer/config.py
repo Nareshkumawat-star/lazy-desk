@@ -43,7 +43,23 @@ class AppConfig:
             "http://localhost:8765",
             "http://127.0.0.1:8765",
             "lazydesk://app",
+            # Deployed frontends, e.g. a Render static site. Comma-separated and
+            # never wildcarded: an unknown origin must stay rejected so that a
+            # third-party page cannot drive the API with a leaked token.
+            *(self._extra_origins()),
         ]
+
+    @staticmethod
+    def _extra_origins() -> list[str]:
+        """Parse ``LAZYDESK_ALLOWED_ORIGINS`` as an explicit list of origins.
+
+        Wildcards are dropped on purpose: a pattern such as ``*.onrender.com``
+        would let any other Render site drive the API, which defeats both the
+        origin check and the service token.
+        """
+        raw = os.environ.get("LAZYDESK_ALLOWED_ORIGINS", "")
+        origins = [origin.strip().rstrip("/") for origin in raw.split(",")]
+        return [origin for origin in origins if origin and "*" not in origin]
 
     def _load_token(self) -> str:
         """Load or generate the loopback service token.

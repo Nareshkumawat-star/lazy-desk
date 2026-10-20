@@ -146,6 +146,7 @@ The renderer never receives filesystem APIs. It can ask the main process for a n
 ### Security properties
 
 - API binds to `127.0.0.1` only; a random per-install token is required for every sensitive endpoint.
+- CORS is restricted to an explicit origin allowlist, and patterns are rejected on purpose: a `*.onrender.com` rule would let any other Render site drive the API, which defeats both the origin check and the service token.
 - Electron uses `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
 - Filesystem operations are restricted to folders the user selected; traversal and symlink escapes are rejected.
 - Symlinks are never followed during scans or moves.
@@ -172,6 +173,7 @@ lazydesk/
 ├── shared/types/         TypeScript API contract
 ├── demo/MessyDownloads/  fictional files for a safe first run
 ├── docs/screenshots/
+├── render.yml            Render Blueprint for the hosted deployment
 └── scripts/              dev, backend and test launchers
 ```
 
@@ -213,7 +215,7 @@ The full schema is served at `/openapi.json` while the service runs.
 ## Testing
 
 ```bash
-# Python: 36 tests covering scan, conflicts, apply, undo, duplicates, search,
+# Python: 39 tests covering scan, conflicts, apply, undo, duplicates, search,
 # automation, auth, path containment and AI fallback
 npm run test:backend
 
@@ -250,6 +252,48 @@ npm run package
 
 Electron Forge bundles the static Next.js export and the Python service source. The packaged app still requires a Python 3.12+ interpreter with the backend dependencies available; if it cannot find one it shows setup instructions instead of failing silently. A fully self-contained PyInstaller backend is a documented next step, not a claim of this release.
 
+## Deploy to Render
+
+`render.yml` is a Render Blueprint. Render builds both services from this repository:
+
+| Service | Type | Purpose |
+|---|---|---|
+| `lazydesk-api` | Python web service | The FastAPI service |
+| `lazydesk-web` | Static site | The exported Next.js UI |
+
+### Deploy
+
+1. Push this repository to GitHub.
+2. In Render choose **New + → Blueprint**, select the repository and apply. Render reads `render.yml` and creates both services, wiring the UI's API URL and token to the backend automatically.
+3. Open the API service's **Environment** tab and copy `LAZYDESK_SERVICE_TOKEN`.
+4. Open the static site and enter the token once: `https://lazydesk-web.onrender.com/?token=<token>`. The UI stores it in `localStorage` and sends it with every request.
+
+### Two things to check after the first deploy
+
+- **`LAZYDESK_ALLOWED_ORIGINS` on the API must equal the static site's origin exactly** (`https://lazydesk-web.onrender.com`). If Render gave your static site a different name, change that one line and redeploy — the API only accepts the exact origins it is told about, never a wildcard.
+- `https://lazydesk-api.onrender.com/api/health` must answer `200`. It is the public route the Blueprint's health check uses.
+
+### Try it on the server
+
+The hosted service organizes **the server's own filesystem**, so a path you paste must exist on the Render instance — not on your laptop. The repository's fictional demo folder is checked out there, so paste:
+
+```
+/opt/render/project/src/demo/MessyDownloads
+```
+
+That folder holds 11 files. Plans, moves and undos then run on the server and are lost when the free instance is replaced.
+
+### Limits of the free plan
+
+- **No persistent disk.** History and settings reset on every deploy. Uncomment the `disk:` block in `render.yml` on a paid plan to keep them.
+- **Instances sleep** after ~15 minutes of inactivity, so the first request after a pause takes a moment.
+- **The token is baked into the public JavaScript bundle**, so anyone can read it. It protects the demo instance, not a private deployment. For a private token, delete the `NEXT_PUBLIC_LAZYDESK_TOKEN` entry from `render.yml`, set `LAZYDESK_SERVICE_TOKEN` yourself in the dashboard, and open the site once with `?token=<value>`.
+- **The desktop app stays the local-first product** — nothing leaves your machine there. The hosted instance is the same UI driving a remote API over a public internet, which is a demo of the interface, not a privacy model.
+
+### Verified before publishing
+
+The Blueprint validates against Render's published schema (`https://render.com/schema/render.yaml.json`), and the two-service shape was reproduced locally before publishing: the static export served from one origin, the API on another, and a browser run against it produced **zero console errors and zero failed requests**, with authenticated cross-origin calls returning 200, a scan indexing 11 files, and an unauthenticated call correctly refused with 401. The `startCommand` was run exactly as written in the Blueprint. The deployment itself has not been performed from this machine, so treat the first live deploy as the remaining step.
+
 ## Known limitations
 
 - **OCR is not implemented.** Scanned PDFs/images are categorized by filename only; document text is never read unless content indexing is explicitly enabled for supported plain-text files.
@@ -264,6 +308,7 @@ Electron Forge bundles the static Next.js export and the Python service source. 
 - **First-run setup is a dashboard setup card plus an Electron dependency dialog**, not a multi-step wizard.
 - **API keys are stored in the local SQLite database without encryption at rest.** OS account and file permissions are the protection boundary. Use free-tier keys and revoke them if the machine is shared.
 - **Windows long paths** beyond the OS limit may still fail during a move; the error is reported and no overwrite occurs.
+- **The Render deployment has not been performed from this machine.** The Blueprint is schema-valid and the two-service shape was reproduced locally, but the first live deploy is still the remaining step. The hosted instance also organizes the server's own filesystem, not a user's machine — see [Deploy to Render](#deploy-to-render).
 
 ## Hardware
 

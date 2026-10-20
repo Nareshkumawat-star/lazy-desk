@@ -9,6 +9,8 @@ DATA_DIR = tempfile.mkdtemp(prefix="lazydesk-tests-")
 os.environ["LAZYDESK_DATA_DIR"] = DATA_DIR
 os.environ["LAZYDESK_SERVICE_TOKEN"] = "test-token"
 os.environ["LAZYDESK_LOG_LEVEL"] = "warning"
+# A deployed frontend origin, so the CORS wiring for a hosted site is covered.
+os.environ["LAZYDESK_ALLOWED_ORIGINS"] = "https://lazydesk-site.onrender.com"
 
 from fastapi.testclient import TestClient  # noqa: E402
 

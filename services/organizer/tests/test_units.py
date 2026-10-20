@@ -91,3 +91,25 @@ def test_unique_destination(tmp_path):
     assert renamed_first is False
     assert renamed_second is True
     assert first != second
+
+
+def test_extra_allowed_origins_from_env(monkeypatch):
+    """Hosted frontends are configured by URL, trimmed and never wildcarded."""
+    from organizer.config import AppConfig
+
+    monkeypatch.setenv(
+        "LAZYDESK_ALLOWED_ORIGINS",
+        " https://a.onrender.com , https://b.onrender.com/ ,, ",
+    )
+    assert AppConfig._extra_origins() == [
+        "https://a.onrender.com",
+        "https://b.onrender.com",
+    ]
+
+    monkeypatch.delenv("LAZYDESK_ALLOWED_ORIGINS")
+    assert AppConfig._extra_origins() == []
+
+    # A wildcard would defeat the origin check, so it is refused rather than
+    # passed through to the CORS middleware.
+    monkeypatch.setenv("LAZYDESK_ALLOWED_ORIGINS", "* , https://*.onrender.com")
+    assert AppConfig._extra_origins() == []
