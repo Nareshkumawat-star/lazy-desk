@@ -54,14 +54,18 @@ export function getToken(): string {
   }
   const bridge = getBridge();
   if (bridge?.token) return bridge.token;
-  const stored = window.localStorage.getItem("lazydesk.token");
-  if (stored) return stored;
+  // An explicit ?token= in the URL is a deliberate, one-off user action, so it
+  // wins over a token stored earlier. Otherwise a stale token would shadow
+  // the URL forever and the site could only be re-authenticated by clearing
+  // localStorage by hand.
   const params = new URLSearchParams(window.location.search);
   const fromUrl = params.get("token");
   if (fromUrl) {
     window.localStorage.setItem("lazydesk.token", fromUrl);
     return fromUrl;
   }
+  const stored = window.localStorage.getItem("lazydesk.token");
+  if (stored) return stored;
   return process.env.NEXT_PUBLIC_LAZYDESK_TOKEN || "";
 }
 
@@ -109,7 +113,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       }
       if (response.status === 401) {
         message =
-          "LazyDesk could not authenticate with its local service. Restart the app so a fresh token is issued.";
+          "LazyDesk could not authenticate with the service. The token may be wrong or out of date - open the site again with ?token=<your token> to replace it, or restart the desktop app so a fresh token is issued.";
       }
       throw new ApiError(message, response.status, detail);
     }

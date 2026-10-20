@@ -219,7 +219,7 @@ The full schema is served at `/openapi.json` while the service runs.
 # automation, auth, path containment and AI fallback
 npm run test:backend
 
-# Frontend unit tests (Vitest, 8 tests)
+# Frontend unit tests (Vitest, 13 tests)
 npm --workspace @lazydesk/web run test
 
 # Python lint (Ruff); needs the dev extras, see CONTRIBUTING.md
