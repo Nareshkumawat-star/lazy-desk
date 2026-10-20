@@ -220,6 +220,9 @@ npm run test:backend
 # Frontend unit tests (Vitest, 8 tests)
 npm --workspace @lazydesk/web run test
 
+# Python lint (Ruff); needs the dev extras, see CONTRIBUTING.md
+npm run lint
+
 # End-to-end (Playwright + installed Chrome); starts the dev stack automatically
 # Install a browser if Chrome is not present: npx playwright install chromium
 npm run test:e2e
@@ -231,7 +234,7 @@ npm run typecheck
 npm run build:web
 ```
 
-The committed Playwright suite runs 2 tests against the real UI: every screen renders without console/page errors, then a disposable copy of the demo folder is scanned, planned, applied, undone, and searched. On this machine both tests passed in about 53 seconds when Playwright started the dev stack itself. A separate browser smoke run applied and undid 12 files (including a duplicate copy), exercised duplicate detection, settings and theme switching, and finished with **zero console or page errors**.
+The committed Playwright suite runs 2 tests against the real UI: every screen renders without console/page errors, then a disposable copy of the demo folder is scanned, planned, applied, undone, and searched. Both tests passed in **42 s** when Playwright started the dev stack itself (three runs: 41.8 s, 42.4 s, 48.4 s). Navigating all seven screens without touching any control produced no non-GET request and no console error, confirming that LazyDesk never writes a setting without an explicit user action. A separate browser smoke run applied and undid 12 files (including a duplicate copy), exercised duplicate detection, settings and theme switching, and finished with **zero console or page errors**.
 
 The free AI path was verified against the live Pollinations endpoint with `ai_scope=all`: 11 demo files were classified in **1.8 s** by the `gpt-oss-20b` model, then applied and undone successfully. Two further runs took 2.2 s and 18.8 s, so treat this as a single-digit-second figure on an idle connection rather than a benchmark. The same run confirmed the dashboard's "Enable free cloud AI" button, the Settings "Test connection" button, the "Models" button, rules-only mode, and the full scan → categorize → plan → preview → apply → undo → search round trip.
 

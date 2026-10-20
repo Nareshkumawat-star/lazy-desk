@@ -16,6 +16,7 @@
     "package": "node scripts/clean-pycache.mjs && npm run build:web && npm --workspace @lazydesk/desktop run package",
     "start:desktop": "npm --workspace @lazydesk/desktop run start",
     "typecheck": "npm --workspace @lazydesk/web run typecheck",
+    "lint": "node scripts/lint.mjs",
     "test:backend": "node scripts/test-backend.mjs",
     "test:e2e": "playwright test",
     "test": "npm --workspace @lazydesk/web run test && npm run test:backend"

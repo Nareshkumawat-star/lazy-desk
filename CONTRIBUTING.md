@@ -29,10 +29,23 @@ npm run dev              # browser preview + Python service
 npm run dev:desktop      # same, inside Electron
 npm run test             # Vitest + pytest
 npm run test:backend     # pytest only
+npm run lint             # Ruff over the Python service
 npm run typecheck        # TypeScript
 npm run build:web        # static export
 npm run package          # Electron Forge package
 ```
+
+`npm run lint` needs Ruff. It is not part of the runtime install, so add the
+development extras once:
+
+```bash
+cd services/organizer
+.venv/Scripts/python.exe -m pip install -e ".[dev]"   # Windows
+.venv/bin/python -m pip install -e ".[dev]"           # macOS/Linux
+cd ../..
+```
+
+Both linters should be clean before you open a pull request.
 
 ## Code style
 
