@@ -8,6 +8,10 @@
 # Deploy: push this file to your repo, then in Render choose New + -> Blueprint
 # and select the repository. Render creates both services from this file.
 #
+# IMPORTANT: Render looks for `render.yaml` by default. This file is named
+# `render.yml`, so set the **Blueprint Path** field to `render.yml` in the
+# setup form. Without it Render reports that it cannot find a blueprint.
+#
 # After the first deploy, open the static site and append the service token:
 #   https://lazydesk-web.onrender.com/?token=<value from Render dashboard>
 # The UI keeps it in localStorage, so it only has to be entered once.

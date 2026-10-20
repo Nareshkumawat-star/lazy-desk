@@ -264,9 +264,10 @@ Electron Forge bundles the static Next.js export and the Python service source. 
 ### Deploy
 
 1. Push this repository to GitHub.
-2. In Render choose **New + → Blueprint**, select the repository and apply. Render reads `render.yml` and creates both services, wiring the UI's API URL and token to the backend automatically.
-3. Open the API service's **Environment** tab and copy `LAZYDESK_SERVICE_TOKEN`.
-4. Open the static site and enter the token once: `https://lazydesk-web.onrender.com/?token=<token>`. The UI stores it in `localStorage` and sends it with every request.
+2. In Render choose **New + → Blueprint**, connect the repository, and fill in the form. **Set the *Blueprint Path* field to `render.yml`** — Render looks for `render.yaml` by default, and this file is named `render.yml`. Without this Render reports that it cannot find a blueprint.
+3. Review the two services Render lists and click **Deploy Blueprint**. Render creates both, wiring the UI's API URL and token to the backend automatically.
+4. Open the API service's **Environment** tab and copy `LAZYDESK_SERVICE_TOKEN`.
+5. Open the static site and enter the token once: `https://lazydesk-web.onrender.com/?token=<token>`. The UI stores it in `localStorage` and sends it with every request.
 
 ### Two things to check after the first deploy
 
