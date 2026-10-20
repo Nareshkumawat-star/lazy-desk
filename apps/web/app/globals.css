@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98.5%;
+    --foreground: 240 10% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
+    --muted: 240 5% 95.5%;
+    --muted-foreground: 240 4% 42%;
+    --border: 240 6% 89%;
+    --input: 240 6% 86%;
+    --primary: 262 72% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 94%;
+    --secondary-foreground: 240 6% 20%;
+    --accent: 262 70% 96%;
+    --accent-foreground: 262 62% 36%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 154 60% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 42%;
+    --warning-foreground: 0 0% 100%;
+    --ring: 262 72% 55%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 240 10% 5.5%;
+    --foreground: 240 6% 95%;
+    --card: 240 8% 8.5%;
+    --card-foreground: 240 6% 95%;
+    --muted: 240 6% 14%;
+    --muted-foreground: 240 5% 62%;
+    --border: 240 6% 17%;
+    --input: 240 6% 20%;
+    --primary: 262 84% 68%;
+    --primary-foreground: 250 40% 8%;
+    --secondary: 240 6% 14%;
+    --secondary-foreground: 240 6% 92%;
+    --accent: 262 38% 17%;
+    --accent-foreground: 262 80% 82%;
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 154 50% 45%;
+    --success-foreground: 150 40% 8%;
+    --warning: 38 88% 55%;
+    --warning-foreground: 30 60% 10%;
+    --ring: 262 84% 68%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  ::selection {
+    @apply bg-primary/25;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-muted-foreground/25;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer components {
+  .surface {
+    @apply rounded-xl border border-border bg-card shadow-sm;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;
+  }
+
+  .sidebar-link-active {
+    @apply bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .field-label {
+    @apply text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+  }
+
+  .code-chip {
+    @apply rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

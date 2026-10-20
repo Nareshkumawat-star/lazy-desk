@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Next.js / Electron
+.next/
+out/
+dist/
+apps/web/next-env.d.ts
+*.tsbuildinfo
+
+# Test output
+.tmp/
+test-results/
+playwright-report/
+
+# Local runtime data
+*.db
+*.db-wal
+*.db-shm
+service-token
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

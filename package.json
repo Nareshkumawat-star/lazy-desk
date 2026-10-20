@@ -1,0 +1,29 @@
+{
+  "name": "lazydesk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first AI file organizer",
+  "workspaces": [
+    "apps/web",
+    "apps/desktop"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:desktop": "node scripts/dev.mjs --desktop",
+    "dev:web": "npm --workspace @lazydesk/web run dev",
+    "dev:backend": "node scripts/backend.mjs",
+    "build:web": "npm --workspace @lazydesk/web run build",
+    "package": "node scripts/clean-pycache.mjs && npm run build:web && npm --workspace @lazydesk/desktop run package",
+    "start:desktop": "npm --workspace @lazydesk/desktop run start",
+    "typecheck": "npm --workspace @lazydesk/web run typecheck",
+    "test:backend": "node scripts/test-backend.mjs",
+    "test:e2e": "playwright test",
+    "test": "npm --workspace @lazydesk/web run test && npm run test:backend"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
+}
