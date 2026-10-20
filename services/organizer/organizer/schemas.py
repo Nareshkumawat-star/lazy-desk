@@ -291,6 +291,12 @@ class RevealResponse(BaseModel):
     message: str
 
 
+class IndexStatusOut(BaseModel):
+    indexed: int = 0
+    content_indexed: int = 0
+    last_indexed_at: str | None = None
+
+
 class AutomationRuleIn(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     root_path: str = Field(min_length=1)

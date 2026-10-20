@@ -184,6 +184,8 @@ All routes except `/api/health` require the `X-LazyDesk-Token` header.
 | GET | `/api/health` | Public readiness probe |
 | GET | `/api/dashboard` | Aggregated counts and recent activity |
 | POST | `/api/scan` | Scan an approved folder |
+| GET | `/api/sessions` | Recent scan sessions |
+| GET | `/api/sessions/{id}` | One session with its files and proposed moves |
 | POST | `/api/categorize` | Classify a session with rules + optional AI |
 | POST | `/api/plan` | Build proposed moves |
 | POST | `/api/operations/preview` | Re-validate plan against disk |
@@ -193,10 +195,20 @@ All routes except `/api/health` require the `X-LazyDesk-Token` header.
 | POST | `/api/duplicates/scan` | SHA-256 duplicate groups |
 | POST | `/api/search` | Natural-language metadata/semantic search |
 | POST | `/api/search/index` | Build optional embedding index |
+| GET | `/api/search/index/status` | Embedding index counters |
 | GET/PATCH | `/api/settings` | Non-secret settings; secrets are write-only |
+| GET | `/api/ai/status` | Readiness of the active provider |
+| GET | `/api/ai/providers` | Supported providers and their state |
+| GET | `/api/ai/models` | Model list for one provider |
+| POST | `/api/ai/test` | Connectivity check without changing settings |
+| GET | `/api/categories` | Built-in categories and folder names |
+| GET | `/api/automation` | Saved rules and next scheduled run |
+| GET | `/api/automation/pending` | Sessions waiting for a rule |
 | GET/POST/PATCH/DELETE | `/api/automation/rules…` | Saved rules, manual runs |
 | POST | `/api/files/reveal` | Open the containing folder |
 | POST | `/api/index/clear` | Delete local embeddings |
+
+The full schema is served at `/openapi.json` while the service runs.
 
 ## Testing
 

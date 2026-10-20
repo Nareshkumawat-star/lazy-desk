@@ -25,6 +25,7 @@ from ..schemas import (
     DuplicatesResponse,
     IndexRequest,
     IndexResponse,
+    IndexStatusOut,
     RevealRequest,
     RevealResponse,
     SearchRequest,
@@ -95,8 +96,8 @@ def search_index(
     return IndexResponse(indexed=indexed, provider=provider, model=model, message=message)
 
 
-@router.get("/search/index/status")
-def index_status(db: Session = Depends(get_db)) -> dict:
+@router.get("/search/index/status", response_model=IndexStatusOut)
+def index_status(db: Session = Depends(get_db)) -> IndexStatusOut:
     count = db.scalar(select(func.count()).select_from(FileEmbedding)) or 0
     latest = db.scalar(select(func.max(FileEmbedding.created_at)))
     content_count = (
@@ -107,11 +108,11 @@ def index_status(db: Session = Depends(get_db)) -> dict:
         )
         or 0
     )
-    return {
-        "indexed": int(count),
-        "content_indexed": int(content_count),
-        "last_indexed_at": latest.isoformat() if latest else None,
-    }
+    return IndexStatusOut(
+        indexed=int(count),
+        content_indexed=int(content_count),
+        last_indexed_at=latest.isoformat() if latest else None,
+    )
 
 
 # --------------------------------------------------------------------- reveal
