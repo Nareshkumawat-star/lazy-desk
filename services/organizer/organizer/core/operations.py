@@ -16,7 +16,13 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..database.models import FileOperation, FileRecord, OperationBatch, OrganizationSession
+from ..database.models import (
+    BatchDirectory,
+    FileOperation,
+    FileRecord,
+    OperationBatch,
+    OrganizationSession,
+)
 from ..filesystem.safety import ensure_within, unique_destination
 from ..schemas import OperationOut, PlanItem
 
@@ -25,6 +31,85 @@ RESOLVED_STATUSES = ("applied", "partial")
 
 def _now() -> datetime:
     return datetime.now(UTC)
+
+
+def _directories_to_create(target: Path, root: Path) -> list[Path]:
+    """Folders that would have to be created for ``target``, outermost first.
+
+    Only folders inside ``root`` are reported; the root itself is never
+    considered, so it can never be created or removed by a move.
+    """
+    try:
+        resolved_target = ensure_within(root, target)
+    except Exception:
+        return []
+    try:
+        resolved_root = root.resolve()
+    except OSError:
+        resolved_root = root
+
+    missing: list[Path] = []
+    current = resolved_target
+    for _ in range(16):
+        if current.parent == current or current == resolved_root:
+            break
+        if current.exists():
+            break
+        missing.append(current)
+        current = current.parent
+    return list(reversed(missing))
+
+
+def _prune_empty_created_dirs(created: dict[str, Path]) -> None:
+    """Drop folders we created that ended up empty, so they are never recorded."""
+    for path_str, directory in list(created.items()):
+        try:
+            if not directory.is_dir() or any(directory.iterdir()):
+                continue
+            directory.rmdir()
+        except OSError:
+            continue
+        created.pop(path_str, None)
+
+
+def _cleanup_created_dirs(db: Session, batch: OperationBatch, root: Path) -> int:
+    """Remove the folders an apply created once they are empty again."""
+    rows = list(
+        db.scalars(select(BatchDirectory).where(BatchDirectory.batch_id == batch.id)).all()
+    )
+    if not rows:
+        return 0
+
+    try:
+        resolved_root = root.resolve()
+    except OSError:
+        resolved_root = root
+
+    # Deepest first, so nested folders are removed before their parents.
+    ordered = sorted(rows, key=lambda row: len(Path(row.path).parts), reverse=True)
+    removed = 0
+    for row in ordered:
+        candidate = Path(row.path)
+        try:
+            ensure_within(resolved_root, candidate)
+        except Exception:
+            continue
+        if candidate == resolved_root:
+            continue
+        try:
+            if candidate.is_symlink() or not candidate.is_dir():
+                db.delete(row)
+                continue
+            if any(candidate.iterdir()):
+                continue  # the folder still holds files: leave it alone
+            candidate.rmdir()
+        except OSError:
+            continue
+        removed += 1
+        db.delete(row)
+
+    db.commit()
+    return removed
 
 
 def _operations_for(
@@ -162,6 +247,7 @@ def apply_operations(
     skipped = 0
     errors: list[str] = []
     touched: list[FileOperation] = []
+    created_dirs: dict[str, Path] = {}
 
     for op in ops:
         source = Path(op.source_path)
@@ -199,7 +285,10 @@ def apply_operations(
             taken.add(str(intended))
 
         try:
+            to_create = _directories_to_create(final.parent, root)
             final.parent.mkdir(parents=True, exist_ok=True)
+            for directory in to_create:
+                created_dirs.setdefault(str(directory), directory)
             if final.exists():
                 raise FileExistsError(f"{final} already exists")
             shutil.move(str(source), str(final))
@@ -229,6 +318,11 @@ def apply_operations(
     batch.failed_count = failed + skipped
     batch.status = "applied" if applied and failed == 0 and skipped == 0 else ("partial" if applied else "failed")
     session.status = "applied" if batch.status == "applied" else ("partial" if applied else session.status)
+
+    # Folders that stayed empty (a move that failed) are not worth keeping.
+    _prune_empty_created_dirs(created_dirs)
+    for path_str in created_dirs:
+        db.add(BatchDirectory(batch_id=batch.id, path=path_str))
     db.commit()
 
     if applied == 0:
@@ -329,6 +423,10 @@ def undo_batch(db: Session, batch_id: str | None = None) -> tuple[str | None, in
         batch.undone_count = restored
     db.commit()
 
+    removed_dirs = 0
+    if root is not None and session is not None:
+        removed_dirs = _cleanup_created_dirs(db, batch, root)
+
     message = (
         f"Restored {restored} file{'s' if restored != 1 else ''}."
         if restored
@@ -336,6 +434,8 @@ def undo_batch(db: Session, batch_id: str | None = None) -> tuple[str | None, in
     )
     if failed:
         message += f" {failed} file(s) could not be restored; nothing was overwritten."
+    if removed_dirs:
+        message += f" Removed {removed_dirs} empty folder{'s' if removed_dirs != 1 else ''}."
     return batch.id, restored, failed, errors, message
 
 

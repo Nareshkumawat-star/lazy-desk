@@ -95,6 +95,22 @@ class OperationBatch(Base):
     operations: Mapped[list[FileOperation]] = relationship(back_populates="batch")
 
 
+class BatchDirectory(Base):
+    """Folders an apply had to create, so an undo can remove them again.
+
+    A new table (rather than a column on ``operation_batches``) keeps existing
+    installations working: ``create_all`` adds the table without touching the
+    tables that are already there.
+    """
+
+    __tablename__ = "batch_directories"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    batch_id: Mapped[str] = mapped_column(String(36), index=True)
+    path: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class FileOperation(Base):
     __tablename__ = "file_operations"
 

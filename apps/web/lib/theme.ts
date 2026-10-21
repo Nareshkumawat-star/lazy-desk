@@ -18,9 +18,3 @@ export function applyTheme(theme: ThemeChoice, persist = true): void {
     }
   }
 }
-
-export function currentStoredTheme(): ThemeChoice {
-  if (typeof window === "undefined") return "system";
-  const stored = window.localStorage.getItem("lazydesk.theme");
-  return stored === "light" || stored === "dark" ? stored : "system";
-}

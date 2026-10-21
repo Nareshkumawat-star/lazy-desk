@@ -124,6 +124,93 @@ def test_scan_plan_apply_undo(client, auth_headers, messy_folder: Path):
     assert second.json()["restored"] == 0
 
 
+def test_undo_removes_the_folders_it_created(client, auth_headers, messy_folder: Path):
+    """An undo must not leave empty category folders behind."""
+    scan = client.post("/api/scan", json={"path": str(messy_folder)}, headers=auth_headers)
+    session_id = scan.json()["session"]["id"]
+    client.post(
+        "/api/plan",
+        json={"session_id": session_id, "use_ai": False, "ai_scope": "none"},
+        headers=auth_headers,
+    )
+    apply = client.post(
+        "/api/operations/apply", json={"session_id": session_id}, headers=auth_headers
+    )
+    assert apply.status_code == 200, apply.text
+    assert (messy_folder / "Documents").is_dir()
+    assert (messy_folder / "Images").is_dir()
+
+    undo = client.post(
+        "/api/operations/undo", json={"batch_id": apply.json()["batch_id"]}, headers=auth_headers
+    )
+    assert undo.status_code == 200, undo.text
+    assert undo.json()["restored"] == 7
+
+    # The folders LazyDesk created are gone again...
+    assert not (messy_folder / "Documents").exists()
+    assert not (messy_folder / "Images").exists()
+    assert not (messy_folder / "Source-Code").exists()
+    assert not (messy_folder / "Videos").exists()
+    assert not (messy_folder / "Archives").exists()
+    assert not (messy_folder / "Other").exists()
+    # ...but folders the user already had are untouched.
+    assert (messy_folder / "nested").is_dir()
+
+
+def test_undo_keeps_folders_that_already_existed(client, auth_headers, messy_folder: Path):
+    """A folder the user had before the apply is never deleted by an undo."""
+    docs = messy_folder / "Documents"
+    docs.mkdir()
+
+    scan = client.post("/api/scan", json={"path": str(messy_folder)}, headers=auth_headers)
+    session_id = scan.json()["session"]["id"]
+    client.post(
+        "/api/plan",
+        json={"session_id": session_id, "use_ai": False, "ai_scope": "none"},
+        headers=auth_headers,
+    )
+    apply = client.post(
+        "/api/operations/apply", json={"session_id": session_id}, headers=auth_headers
+    )
+    assert apply.status_code == 200, apply.text
+
+    undo = client.post(
+        "/api/operations/undo", json={"batch_id": apply.json()["batch_id"]}, headers=auth_headers
+    )
+    assert undo.status_code == 200, undo.text
+    assert undo.json()["restored"] == 7
+    assert docs.is_dir()
+    # The folders that were created by the apply are still cleaned up.
+    assert not (messy_folder / "Images").exists()
+
+
+def test_undo_keeps_a_folder_that_still_has_files(client, auth_headers, messy_folder: Path):
+    """A category folder that still holds something is never removed."""
+    scan = client.post("/api/scan", json={"path": str(messy_folder)}, headers=auth_headers)
+    session_id = scan.json()["session"]["id"]
+    client.post(
+        "/api/plan",
+        json={"session_id": session_id, "use_ai": False, "ai_scope": "none"},
+        headers=auth_headers,
+    )
+    apply = client.post(
+        "/api/operations/apply", json={"session_id": session_id}, headers=auth_headers
+    )
+    assert apply.status_code == 200, apply.text
+
+    # The user drops their own file into the folder after the apply.
+    keeper = messy_folder / "Images" / "holiday.png"
+    keeper.write_bytes(b"png")
+
+    undo = client.post(
+        "/api/operations/undo", json={"batch_id": apply.json()["batch_id"]}, headers=auth_headers
+    )
+    assert undo.status_code == 200, undo.text
+    assert undo.json()["restored"] == 7
+    assert keeper.exists()
+    assert (messy_folder / "Images").is_dir()
+
+
 def test_conflict_is_renamed_and_original_preserved(client, auth_headers, messy_folder: Path):
     docs = messy_folder / "Documents"
     docs.mkdir()

@@ -1,6 +1,14 @@
 import { defineConfig } from "@playwright/test";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const baseURL = process.env.LAZYDESK_WEB_URL || "http://localhost:3000";
+
+// The end-to-end suite must not depend on the developer's real LazyDesk data:
+// that database carries saved settings (cloud AI enabled, automation rules) and
+// would make the run depend on a third-party network call. Give the server
+// that Playwright starts its own empty data directory.
+const e2eDataDir = join(tmpdir(), `lazydesk-e2e-${process.pid}-${Date.now()}`);
 
 export default defineConfig({
   testDir: "./e2e",
@@ -24,5 +32,6 @@ export default defineConfig({
         url: baseURL,
         reuseExistingServer: true,
         timeout: 120_000,
+        env: { LAZYDESK_DATA_DIR: e2eDataDir },
       },
 });
